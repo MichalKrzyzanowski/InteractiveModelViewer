@@ -1,0 +1,193 @@
+[gd_scene load_steps=13 format=2]
+
+[ext_resource path="res://TestPlane/TestPlane.tscn" type="PackedScene" id=1]
+[ext_resource path="res://Viewer.gd" type="Script" id=2]
+[ext_resource path="res://Annotation/Annotation.tscn" type="PackedScene" id=3]
+[ext_resource path="res://resetRotation.png" type="Texture" id=4]
+[ext_resource path="res://InfoBox/InfoBox.tscn" type="PackedScene" id=5]
+[ext_resource path="res://panoTest.jpeg" type="Texture" id=6]
+
+[sub_resource type="PanoramaSky" id=8]
+panorama = ExtResource( 6 )
+
+[sub_resource type="Environment" id=3]
+background_mode = 2
+background_sky = SubResource( 8 )
+ss_reflections_enabled = true
+ssao_enabled = true
+
+[sub_resource type="Shader" id=4]
+code = "// shader made by swarnimarun
+// link: https://github.com/steincodes/godot-shader-tutorials
+
+shader_type canvas_item;
+render_mode unshaded;
+
+uniform int intensity : hint_range(0,200); 
+uniform float precision : hint_range(0,0.02);
+uniform vec4 outline_color : hint_color;
+
+varying vec2 o;
+varying vec2 f;
+
+void vertex()
+{
+	o = VERTEX;
+	vec2 uv = (UV - 0.5);
+	VERTEX += uv * float(intensity);
+	f = VERTEX;
+}
+
+void fragment()
+{
+	ivec2 t = textureSize(TEXTURE, 0);
+	vec2 regular_uv;
+	regular_uv.x = UV.x + (f.x - o.x)/float(t.x);
+	regular_uv.y = UV.y + (f.y - o.y)/float(t.y);
+	
+	vec4 regular_color = texture(TEXTURE, regular_uv);
+	if((regular_uv.x < 0.0 || regular_uv.x > 1.0) || (regular_uv.y < 0.0 || regular_uv.y > 1.0) || regular_color.a <=0.25){
+		regular_color = vec4(0.0); 
+	}
+	
+	vec2 ps = TEXTURE_PIXEL_SIZE * float(intensity) * precision;
+	
+	vec4 final_color = regular_color;
+	if (regular_color.a <= 0.0)
+	{
+		for(int x = -1; x <= 1; x += 1){
+			for(int y = -1; y <= 1; y += 1){
+				//Get the X and Y offset from this
+				if (x==0 && y==0)
+					continue;
+					
+				vec2 outline_uv = regular_uv + vec2(float(x) * ps.x, float(y) * ps.y); 
+				
+				//Sample here, if we are out of bounds then fail
+				vec4 outline_sample = texture(TEXTURE, outline_uv);
+				if((outline_uv.x < 0.0 || outline_uv.x > 1.0) || (outline_uv.y < 0.0 || outline_uv.y > 1.0)){
+					//We aren't a real color
+					outline_sample = vec4(0);
+				}
+				
+				//Is our sample empty? Is there something nearby?
+				if(outline_sample.a > final_color.a){
+					final_color = outline_color;
+				}
+			}
+		}
+	}
+	COLOR = final_color; 
+}"
+
+[sub_resource type="ShaderMaterial" id=5]
+shader = SubResource( 4 )
+shader_param/intensity = 75
+shader_param/precision = 0.02
+shader_param/outline_color = Color( 0, 0, 0, 1 )
+
+[sub_resource type="Animation" id=7]
+resource_name = "HideInfoBox"
+tracks/0/type = "value"
+tracks/0/path = NodePath("UI/InfoBox:rect_position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 0.241484, 1 ),
+"update": 0,
+"values": [ Vector2( 0, 400 ), Vector2( -400, 400 ) ]
+}
+
+[sub_resource type="Animation" id=6]
+resource_name = "ShowInfoBox"
+tracks/0/type = "value"
+tracks/0/path = NodePath("UI/InfoBox:rect_position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1 ),
+"transitions": PoolRealArray( 0.241484, 1 ),
+"update": 0,
+"values": [ Vector2( -400, 400 ), Vector2( 0, 400 ) ]
+}
+
+[node name="Root" type="Spatial"]
+script = ExtResource( 2 )
+
+[node name="Plane" parent="." instance=ExtResource( 1 )]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="VSlider" type="VSlider" parent="CanvasLayer"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -36.0
+margin_top = 20.0
+margin_right = -20.0
+margin_bottom = 172.0
+rect_rotation = 180.0
+rect_scale = Vector2( -1, 1 )
+rect_pivot_offset = Vector2( 8, 75 )
+min_value = 40.0
+value = 70.0
+scrollable = false
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource( 3 )
+
+[node name="CameraPivot" type="Spatial" parent="."]
+
+[node name="Camera" type="Camera" parent="CameraPivot"]
+transform = Transform( 1, 0, 0, 0, 0.921328, 0.388786, 0, -0.388786, 0.921328, 0, 1.52922, 5.03066 )
+
+[node name="Annotations" type="Spatial" parent="."]
+
+[node name="CockpitText" parent="Annotations" instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.427757, 0 )
+annotationText = "Cockpit"
+objectDescription = "Cockpit"
+
+[node name="Propeller" parent="Annotations" instance=ExtResource( 3 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.13273, 0.999855, 2.10385 )
+annotationText = "Propeller"
+objectDescription = "Propeller"
+
+[node name="PointsOfInterest" type="Spatial" parent="."]
+
+[node name="Cockpit" type="Spatial" parent="PointsOfInterest"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.000245035, 0.133734, 0.294124 )
+
+[node name="Propeller" type="Spatial" parent="PointsOfInterest"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00440609, 0.162303, 1.96428 )
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="InfoBox" parent="UI" instance=ExtResource( 5 )]
+margin_left = -8.99841
+margin_right = 391.002
+
+[node name="ResetButton" type="TextureButton" parent="UI"]
+material = SubResource( 5 )
+margin_left = 10.0
+margin_top = 10.0
+margin_right = 40.0
+margin_bottom = 46.0
+texture_normal = ExtResource( 4 )
+
+[node name="QuitButton" type="Button" parent="UI"]
+margin_left = 960.0
+margin_top = 560.0
+margin_right = 1000.0
+margin_bottom = 580.0
+text = "Quit"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+anims/HideInfoBox = SubResource( 7 )
+anims/ShowInfoBox = SubResource( 6 )
+
+[connection signal="gui_input" from="UI/ResetButton" to="." method="_on_ResetButton_gui_input"]
