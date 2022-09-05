@@ -14,5 +14,5 @@ func _on_Area_input_event(camera:Node, event:InputEvent, position:Vector3, norma
 			InfoBoxController.showInfoBox(objectDescription)
 	
 	if event is InputEventScreenTouch:
-		if event.pressed && event.button_index == BUTTON_LEFT:
+		if event.pressed:
 			InfoBoxController.showInfoBox(objectDescription)

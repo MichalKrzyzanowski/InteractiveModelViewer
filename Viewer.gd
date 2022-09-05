@@ -70,6 +70,10 @@ func _on_ResetButton_gui_input(event:InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.pressed && event.button_index == BUTTON_LEFT:
 			resetRotation()
+			
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			resetRotation()
 
 func _on_QuitButton_button_up() -> void:
 	get_tree().quit()
