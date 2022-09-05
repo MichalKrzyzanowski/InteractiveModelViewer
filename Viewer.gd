@@ -48,7 +48,7 @@ func _physics_process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
-		if event.pressed && event.button_index == BUTTON_LEFT:
+		if event.pressed:
 			eventId = 1
 		else:
 			eventId = -1

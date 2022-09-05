@@ -11,7 +11,7 @@ func _input(event: InputEvent) -> void:
 			hideInfoBox()
 
 	if event is InputEventScreenTouch:
-		if event.pressed && event.button_index == BUTTON_LEFT:
+		if event.pressed:
 			hideInfoBox()
 	
 
